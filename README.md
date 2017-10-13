@@ -50,7 +50,7 @@ Perform exploratory data analysis (EDA) of the relationship between audience_sco
 * * *
 
 ## Part 5: Prediction
-I Picked a movie from 2016 and did a prediction for this movie using my developed model and the `predict` function in R.
+I Picked a Scuicide Sqade  movie  featured in 2016 with the audience score, according to Rotten Tomatoes, 62 https://www.rottentomatoes.com/m/suicide_squad_2016 and did a prediction for this movie using my developed model and the `predict` function in R.
 
 * * *
 
