@@ -82,7 +82,9 @@ movies<-movies%>%
 movies
 
 
-ggplot(movies, aes(x=audience_score_log))+geom_histogram()
+plot1<-ggplot(movies, aes(x=audience_score_log))+geom_histogram()
+dev.copy(png, file="plot1.png", height=480, width=480)
+dev.off()
 ```
 Applying a logariphm function to audience_score, we can see the audience score has sharp left-skewed distribution and with its peak at ~ 4.3 (between 75-90).
 
@@ -96,7 +98,9 @@ knitr::kable(corr_mat)
 ```
 
 ```{r}
-corrplot(corr_mat, type = "upper")
+corplot1<-corrplot(corr_mat, type = "upper")
+dev.copy(png, file="corplot1.png", height=480, width=480)
+dev.off()
 ```
 
 
@@ -104,8 +108,11 @@ Here we can see that all 4 variables are highly correlated, so to eliminate "hea
 
 ##Building correlation charts
 ```{r}
-ggplot(data = movies, aes(x = audience_score, y = feature_film)) +
+plot2<-ggplot(data = movies, aes(x = audience_score, y = feature_film)) +
   geom_point()
+dev.copy(png, file="plot2.png", height=480, width=480)
+dev.off()
+ 
 f_film.lm=lm(audience_score~feature_film, data = movies)
 summary(f_film.lm)
 ```
@@ -113,23 +120,30 @@ This variable has an estimated slope of -21.966 and estimate intercept 82.543. S
 
 
 ```{r}
-ggplot(data = movies, aes(x = audience_score, y = drama)) +
+plot3<-ggplot(data = movies, aes(x = audience_score, y = drama)) +
   geom_point()
+  dev.copy(png, file="plot3.png", height=480, width=480)
+dev.off()
+  
 drama.lm=lm(audience_score~drama, data = movies)
 summary(drama.lm)
 
 ```
 This variable has an estimated slope at 5,937 and estimate intercept at 59.352. So, if the movie has a drama genre, it gets 5,937 points in rating. this correlation, according to the p-value, has an impact on movie rating formation.
 ```{r}
-ggplot(data = movies, aes(x = audience_score, y = mpaa_rating_R)) +
+plot4<-ggplot(data = movies, aes(x = audience_score, y = mpaa_rating_R)) +
   geom_point()
+  dev.copy(png, file="plot4.png", height=480, width=480)
+dev.off()
 rating_R.lm=lm(audience_score~mpaa_rating_R, data = movies)
 summary(rating_R.lm)
 ```
 This variable has an estimated slope at 0.3364, and estimate intercept at 62.0367 So, if the movie has a drama genre, it gets 0.3364 points in rating. this correlation, according to the p-value, has a low impact on movie rating formation.
 ```{r}
-ggplot(data = movies, aes(x = audience_score, y = oscar_season)) +
+plot5<-ggplot(data = movies, aes(x = audience_score, y = oscar_season)) +
   geom_point()
+  dev.copy(png, file="plot5.png", height=480, width=480)
+dev.off()
 oscar_s.lm=lm(audience_score~oscar_season, data = movies)
 summary(oscar_s.lm)
 ```
@@ -138,8 +152,10 @@ This variable has an estimated slope at 2.3217, and estimate intercept at 61.538
 
 
 ```{r}
-ggplot(data = movies, aes(x = audience_score, y = summer_season)) +
+plot6<-ggplot(data = movies, aes(x = audience_score, y = summer_season)) +
   geom_point()
+  dev.copy(png, file="plot6.png", height=480, width=480)
+dev.off()
 summer_s.lm=lm(audience_score~summer_season, data = movies)
 summary(summer_s.lm)
 
@@ -153,8 +169,10 @@ This variable has an estimate slope at -0.5320, and estimate intercept at 62.382
 Now we need to check that standard errors of the models are normally distributed with a constant variance. As with the frequentist approach, we check this assumption by examining the distribution of the residuals for the model.  If the residuals are highly non-normal or skewed, the assumption is violated and any subsequent inference is not valid. We are using logarithmic values of each variable to show off any abnormalities.
 ```{r}
 
-ggplot(data = movies, aes(x = audience_score_log, y = feature_film)) +
+plot7<-ggplot(data = movies, aes(x = audience_score_log, y = feature_film)) +
   geom_point()
+  dev.copy(png, file="plot7.png", height=480, width=480)
+dev.off()
 f_film.lm=lm(audience_score_log~feature_film, data = movies)
 summary(f_film.lm)
 
@@ -168,8 +186,10 @@ Knowing that the audience score variable is right-skewed, we can trace this abno
 
 
 ```{r}
-ggplot(data = movies, aes(x = audience_score_log, y = drama)) +
+plot8<-ggplot(data = movies, aes(x = audience_score_log, y = drama)) +
   geom_point()
+  dev.copy(png, file="plot8.png", height=480, width=480)
+dev.off()
 drama.lm=lm(audience_score_log~drama, data = movies)
 
 plot(residuals(drama.lm)~fitted(drama.lm))
@@ -181,8 +201,10 @@ qqline(drama.lm$residuals)
 ```
 With the exception of one observation, the residual plot suggests that the linear regression is a reasonable approximation. But still, we see some potential data errors or outliers.
 ```{r}
-ggplot(data = movies, aes(x = audience_score_log, y = mpaa_rating_R)) +
+plot9<-ggplot(data = movies, aes(x = audience_score_log, y = mpaa_rating_R)) +
   geom_point()
+  dev.copy(png, file="plot9.png", height=480, width=480)
+dev.off()
 rating_R.lm=lm(audience_score_log~mpaa_rating_R, data = movies)
 
 plot(residuals(rating_R.lm)~fitted(rating_R.lm))
@@ -195,8 +217,10 @@ qqline(rating_R.lm$residuals)
 With the exception of one observation (upper right corner on QQ Plot), the residual plot suggests that the linear regression is a reasonable approximation. The diagnostic plot (QQ) fitting for checking residuals, shows that residual quantiles are plotted against their theoretical values which are expected with normally distributed data. Here again, we trace potential outliers or data errors.
 
 ```{r}
-ggplot(data = movies, aes(x = audience_score_log, y = oscar_season)) +
+plot10<-ggplot(data = movies, aes(x = audience_score_log, y = oscar_season)) +
   geom_point()
+  dev.copy(png, file="plot10.png", height=480, width=480)
+dev.off()
 summer_s.lm=lm(audience_score_log~oscar_season, data = movies)
 
 plot(residuals(oscar_s.lm)~fitted(oscar_s.lm))
@@ -209,8 +233,10 @@ With the exception of one observation (upper right corner on QQ plot), the resid
 
 
 ```{r}
-ggplot(data = movies, aes(x = audience_score_log, y = summer_season)) +
+plot11<-ggplot(data = movies, aes(x = audience_score_log, y = summer_season)) +
   geom_point()
+  dev.copy(png, file="plot11.png", height=480, width=480)
+dev.off()
 summer_s.lm=lm(audience_score_log~summer_season, data = movies)
 
 plot(residuals(summer_s.lm)~fitted(summer_s.lm))
@@ -252,7 +278,9 @@ summary(model_bma)
  Printing the model object and the summary command gives us both the posterior model inclusion probability for each variable and the most probable models.  For example, the posterior probability that `feature_filmes ` is included in the model is 1. Running the BAS function, we can see that the model 1 includes: runtime, best_pic_nom - yes,feature_film - yes, drama - yes. Posterior probability of this model is .2101 with R^2 - .1912 and Base Factor - 1
 
 ```{r}
-image(model_bma)
+imagemodel<-image(model_bma)
+dev.copy(png, file="imagemodel.png", height=480, width=480)
+dev.off()
 ```
 
 
@@ -280,7 +308,9 @@ Plotting model against residuals shows fun-shape distribution which is explained
 To understand if they are outliers or just a data error, we could run Bayes.outlier.prob function, but I have troubles to find an appropriate package. That's why we decided to go with model plotting.
 
 ```{r}
-plot(model_movie)
+residuals_leverage<-plot(model_movie)
+dev.copy(png, file="residuals_leverage.png", height=480, width=480)
+dev.off()
 
 ```
 Graph "Residuals vs leverage" shows outliers of the cases 179, 385 and 443.
