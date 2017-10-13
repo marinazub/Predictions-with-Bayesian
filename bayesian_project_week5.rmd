@@ -1,0 +1,314 @@
+---
+title: "Bayesian modeling and prediction for movies"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+
+
+
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(BAS)
+library(GGally)
+library(devtools)
+library(mvtnorm)
+library(corrplot)
+
+
+```
+
+### Load data
+
+```{r load-data}
+#load("movies.Rdata")
+load("movies.Rdata")
+movies<-na.omit(movies)
+summary(movies)
+```
+
+
+
+
+
+* * *
+
+## Part 1: Data
+<p> This concludes 651 observations from the independent movie internet-resources such as Rotten Tomatoes and IMDB, random sampled. 651 movies, which are less than 10% of all movies of the cinematographic era and less than 10% of movies on both web resources. So, because data is got from 2 popular movie resources, we should keep in mind that the prediction model, based on the data from this resources, is applicable to make a prediction for them only. It could not be spread through entire population, except IMDB and Rotten Tomatoes web-site variability of which should be considered in a separate work. </p><br>
+<p>During this work we'll use Oscar Season and Summer Season, Drama and Featured film  variables to predict movie popularity (audience_score) applying Bayesian Regression model </p>
+
+
+
+* * *
+
+## Part 2: Data manipulation
+
+```{r}
+movies$feature_film<-ifelse(movies$title_type == "Feature Film", 
+c("yes"), c("no"))
+
+movies$drama<-ifelse(movies$genre == "Drama", 
+c("yes"), c("no"))
+
+movies$mpaa_rating_R<-ifelse(movies$mpaa_rating == "R", 
+c("yes"), c("no"))
+
+
+movies$oscar_season<-ifelse(movies$thtr_rel_month > 9,  
+c("yes"), c("no"))
+
+
+movies <- movies %>%
+  mutate(summer_season = ifelse( thtr_rel_month >4 & thtr_rel_month <9, "yes", "no"))
+    
+movies_now<-movies%>%
+  select(title_type,feature_film, genre, drama, mpaa_rating, mpaa_rating_R, thtr_rel_month,oscar_season,summer_season )
+movies_now
+
+
+
+
+```
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+Audience score
+```{r}
+movies<-movies%>%
+  mutate(audience_score_log=log(audience_score))
+movies
+
+
+ggplot(movies, aes(x=audience_score_log))+geom_histogram()
+```
+Applying a logariphm function to audience_score, we can see the audience score has sharp left-skewed distribution and with its peak at ~ 4.3 (between 75-90).
+
+To eliminate in advance any correlated variables, it's a good idea to run a correlation analysis and remove any high correlated sectors.
+
+```{r}
+movies_numeric <- movies %>%
+  select(audience_score,imdb_rating,imdb_num_votes,critics_score)
+corr_mat <- cor(movies_numeric,use="complete.obs", method="pearson")
+knitr::kable(corr_mat)
+```
+
+```{r}
+corrplot(corr_mat, type = "upper")
+```
+
+
+Here we can see that all 4 variables are highly correlated, so to eliminate "heavy models" in the next steps, we chose the only one response variable for our model - audience score.
+
+##Building correlation charts
+```{r}
+ggplot(data = movies, aes(x = audience_score, y = feature_film)) +
+  geom_point()
+f_film.lm=lm(audience_score~feature_film, data = movies)
+summary(f_film.lm)
+```
+This variable has an estimated slope of -21.966 and estimate intercept 82.543. So, if the movie is featured film, it gets -21.966 points in rating. this correlation, according to the p-value, has an impact on movie rating formation. We can see one specific low case, which could be a potential outlier.
+
+
+```{r}
+ggplot(data = movies, aes(x = audience_score, y = drama)) +
+  geom_point()
+drama.lm=lm(audience_score~drama, data = movies)
+summary(drama.lm)
+
+```
+This variable has an estimated slope at 5,937 and estimate intercept at 59.352. So, if the movie has a drama genre, it gets 5,937 points in rating. this correlation, according to the p-value, has an impact on movie rating formation.
+```{r}
+ggplot(data = movies, aes(x = audience_score, y = mpaa_rating_R)) +
+  geom_point()
+rating_R.lm=lm(audience_score~mpaa_rating_R, data = movies)
+summary(rating_R.lm)
+```
+This variable has an estimated slope at 0.3364, and estimate intercept at 62.0367 So, if the movie has a drama genre, it gets 0.3364 points in rating. this correlation, according to the p-value, has a low impact on movie rating formation.
+```{r}
+ggplot(data = movies, aes(x = audience_score, y = oscar_season)) +
+  geom_point()
+oscar_s.lm=lm(audience_score~oscar_season, data = movies)
+summary(oscar_s.lm)
+```
+
+This variable has an estimated slope at 2.3217, and estimate intercept at 61.5386 So, if the movie has a drama genre, it gets 2.3217 points in rating. This correlation, according to the p-value, has a low impact on movie rating formation.
+
+
+```{r}
+ggplot(data = movies, aes(x = audience_score, y = summer_season)) +
+  geom_point()
+summer_s.lm=lm(audience_score~summer_season, data = movies)
+summary(summer_s.lm)
+
+
+
+```
+This variable has an estimate slope at -0.5320, and estimate intercept at 62.3828 So, if the movie has a drama genre, it gets - 0.5320 points in rating. This correlation, according to p-value, has a low impact on movie rating formation.
+
+
+##Checking for residuals normal distribution
+Now we need to check that standard errors of the models are normally distributed with a constant variance. As with the frequentist approach, we check this assumption by examining the distribution of the residuals for the model.  If the residuals are highly non-normal or skewed, the assumption is violated and any subsequent inference is not valid. We are using logarithmic values of each variable to show off any abnormalities.
+```{r}
+
+ggplot(data = movies, aes(x = audience_score_log, y = feature_film)) +
+  geom_point()
+f_film.lm=lm(audience_score_log~feature_film, data = movies)
+summary(f_film.lm)
+
+plot(residuals(f_film.lm)~fitted(f_film.lm))
+abline(h=0)
+hist(f_film.lm$residuals)
+qqnorm(f_film.lm$residuals)
+qqline(f_film.lm$residuals)
+```
+Knowing that the audience score variable is right-skewed, we can trace this abnormality in all plots. With the exception of one observation, the residual plot suggests that the linear regression is a reasonable approximation.
+
+
+```{r}
+ggplot(data = movies, aes(x = audience_score_log, y = drama)) +
+  geom_point()
+drama.lm=lm(audience_score_log~drama, data = movies)
+
+plot(residuals(drama.lm)~fitted(drama.lm))
+abline(h=0)
+hist(drama.lm$residuals)
+qqnorm(drama.lm$residuals)
+qqline(drama.lm$residuals)
+
+```
+With the exception of one observation, the residual plot suggests that the linear regression is a reasonable approximation. But still, we see some potential data errors or outliers.
+```{r}
+ggplot(data = movies, aes(x = audience_score_log, y = mpaa_rating_R)) +
+  geom_point()
+rating_R.lm=lm(audience_score_log~mpaa_rating_R, data = movies)
+
+plot(residuals(rating_R.lm)~fitted(rating_R.lm))
+abline(h=0)
+hist(rating_R.lm$residuals)
+qqnorm(rating_R.lm$residuals)
+qqline(rating_R.lm$residuals)
+
+```
+With the exception of one observation (upper right corner on QQ Plot), the residual plot suggests that the linear regression is a reasonable approximation. The diagnostic plot (QQ) fitting for checking residuals, shows that residual quantiles are plotted against their theoretical values which are expected with normally distributed data. Here again, we trace potential outliers or data errors.
+
+```{r}
+ggplot(data = movies, aes(x = audience_score_log, y = oscar_season)) +
+  geom_point()
+summer_s.lm=lm(audience_score_log~oscar_season, data = movies)
+
+plot(residuals(oscar_s.lm)~fitted(oscar_s.lm))
+abline(h=0)
+hist(oscar_s.lm$residuals)
+qqnorm(oscar_s.lm$residuals)
+qqline(oscar_s.lm$residuals)
+```
+With the exception of one observation (upper right corner on QQ plot), the residual plot suggests that the linear regression is a reasonable approximation. The diagnostic plot (QQ) fitting for checking residuals, shows that residual quantiles are plotted against their theoretical values which are expected with normally distributed data.Also here we see some potential outliers, which could be the case of audience score variable.
+
+
+```{r}
+ggplot(data = movies, aes(x = audience_score_log, y = summer_season)) +
+  geom_point()
+summer_s.lm=lm(audience_score_log~summer_season, data = movies)
+
+plot(residuals(summer_s.lm)~fitted(summer_s.lm))
+abline(h=0)
+hist(summer_s.lm$residuals)
+qqnorm(summer_s.lm$residuals)
+qqline(summer_s.lm$residuals)
+```
+With the exception of one observation (upper right corner on QQ plot), the residual plot suggests that the linear regression is a reasonable approximation. The diagnostic plot (QQ) fitting for checking residuals, shows that residual quantiles are plotted against theoretical values which are expected with normally distributed data. Potential outliers or data errors are traced here, too.
+
+
+
+
+We need to create the different "clean" data frame base on movies, where we exclude variables which were used to create the new ones (drama, Oscar season, summer season, mpaa_rating_R) and not interesting variables like actor1, actor2, etc, and highly correlated to audience score variables which were discussed previously.
+```{r}
+movies2<-movies%>%
+  select(title, runtime, feature_film, drama, mpaa_rating_R, thtr_rel_year, oscar_season, summer_season, best_pic_nom, best_pic_win, best_actor_win, best_actress_win, best_dir_win, top200_box, audience_score )
+```
+* * *
+
+## Part 4: Modeling
+We can start to build a multiple linear regration model by including all parameters from the renewed data set. 
+```{r}
+model_movie=lm(audience_score ~. -audience_score -title, data=movies2 )
+model_movie
+```
+
+ A way to get around the problem with choosing an appropriate model is to implement Bayesian model averaging (BMA), in which multiple models are averaged to obtain posteriors of coefficients and predictions from new data. We can use this for either implementing BMA or selecting models.For model prior uniform distribution is chosen and the BIC is selected as a prior distribution because it provides highest Posterior Probabilities values among all others methods.
+
+```{r}
+model_bma = bas.lm(audience_score ~. -audience_score -title , data = movies2,
+                   prior = "BIC", 
+                   modelprior = uniform(),
+                   method="MCMC")
+model_bma
+summary(model_bma)
+```
+
+ Printing the model object and the summary command gives us both the posterior model inclusion probability for each variable and the most probable models.  For example, the posterior probability that `feature_filmes ` is included in the model is 1. Running the BAS function, we can see that the model 1 includes: runtime, best_pic_nom - yes,feature_film - yes, drama - yes. Posterior probability of this model is .2101 with R^2 - .1912 and Base Factor - 1
+
+```{r}
+image(model_bma)
+```
+
+
+#Credible intervals
+```{r}
+
+pd<-par(mfrow = c(1,2))
+coef_lwage = coefficients(model_bma)
+coef_lwage
+plot(coef_lwage, subset = c(1,2,3,4), ask=FALSE)
+```
+``
+Applying visualization of the posterior distribution of the coefficients under the model averaging approach,  we graph the posterior distribution of the coefficients o` below.  Here we can see that the only runtime represents a small probability of coefficient equals to 0.
+
+```{r}
+
+model_movie=lm(audience_score ~ runtime + best_pic_nom + feature_film + drama, data = movies)
+confint(model_movie)
+```
+
+#outliers
+Recalling the problems of outliers, appeared in the beginning of EDA,  after choosing the model with appropriate components, we should check the model again.
+
+Plotting model against residuals shows fun-shape distribution which is explained by the fact that people mostly rate movies with high scores.
+To understand if they are outliers or just a data error, we could run Bayes.outlier.prob function, but I have troubles to find an appropriate package. That's why we decided to go with model plotting.
+
+```{r}
+plot(model_movie)
+
+```
+Graph "Residuals vs leverage" shows outliers of the cases 179, 385 and 443.
+* * *
+
+## Part 5: Prediction
+
+```{r}
+
+movie_2016<-data.frame(runtime = 123, best_pic_nom = "yes", feature_film = "no", drama = "no")
+movie_2016 =  predict(model_bma, estimator="BPM", se.fit=TRUE)
+ci<-confint(movie_2016, estimator="BPM")
+
+```
+We took Scuicide Sqade movie featured in 2016 and applied our prediction model which  found the audience score of 59.35431 with CI  (23.46142 , 95.24719) when the actual movie  rating, according to Rotten Tomatoes is 62 https://www.rottentomatoes.com/m/suicide_squad_2016
+
+* * *
+
+## Part 6: Conclusion
+In conclusion, we must say that during the data analysis we found a few outliers which could be explained by very negative reviews with the lowest rating score. We showed that people mostly rate movies with high ratings between 75 and 90 and having some ratings which are out of this diapason appeared on the graphs as outliers and mostly are exceptions rathers than the standard behavior of customers.
+During this work, we found out the audience score of Suicide Squad 59.35 when the real current score, according to Rotten Tomatoes is 62 which is not a big difference but still leaves some space for improvements. 
+
+
