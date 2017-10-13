@@ -83,8 +83,8 @@ movies
 
 
 plot1<-ggplot(movies, aes(x=audience_score_log))+geom_histogram()
-dev.copy(png, file="plot1.png", height=480, width=480)
-dev.off()
+ggsave("plot1.png")
+unlink("plot1.png")
 ```
 Applying a logariphm function to audience_score, we can see the audience score has sharp left-skewed distribution and with its peak at ~ 4.3 (between 75-90).
 
